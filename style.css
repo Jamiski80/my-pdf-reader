@@ -1,0 +1,39 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    text-align: center;
+}
+
+#pdf-container {
+    border: 1px solid #ccc;
+    margin: 20px 0;
+    height: 600px; /* Adjust as needed */
+    overflow: auto; /* Scroll if PDF is long */
+}
+
+#controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+button {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+input, textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+}

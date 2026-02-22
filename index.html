@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My PDF Reader</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- No local pdf.js needed – using CDN module version -->
+</head>
+<body>
+    <h1>My Simple PDF Reader</h1>
+    
+    <input type="file" id="pdf-upload" accept=".pdf">
+    
+    <div id="pdf-container"></div>
+    
+    <div id="controls">
+        <button id="prev-page">Previous Page</button>
+        <span>Page <span id="page-num">1</span> of <span id="page-count">?</span></span>
+        <button id="next-page">Next Page</button>
+        
+        <button id="zoom-in">Zoom In</button>
+        <button id="zoom-out">Zoom Out</button>
+        
+        <input type="text" id="search-text" placeholder="Search text on this page...">
+        <button id="search-btn">Search</button>
+        
+        <textarea id="notes" placeholder="Add your notes here..."></textarea>
+        <button id="save-notes">Save Notes</button>
+    </div>
+
+    <!-- Load PDF.js as ES module from CDN -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
