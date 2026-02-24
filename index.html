@@ -11,6 +11,16 @@
     <h1>My Simple PDF Reader</h1>
     
     <input type="file" id="pdf-upload" accept=".pdf">
+
+    <div id="sidebar">
+    <h3>Pages</h3>
+    <div id="thumbnails"></div>
+</div>
+
+<div id="main-content">
+    <div id="pdf-container"></div>
+    <!-- controls stay here or move inside main-content -->
+</div>
     
     <div id="pdf-container"></div>
     
@@ -27,6 +37,8 @@
         
         <textarea id="notes" placeholder="Add your notes here..."></textarea>
         <button id="save-notes">Save Notes</button>
+
+        <button id="clear-highlights">Clear Highlights</button>
     </div>
 
     <!-- Load PDF.js as ES module from CDN -->

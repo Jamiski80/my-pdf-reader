@@ -1,3 +1,6 @@
+let searchHighlights = []; // array of {x, y, width, height} for current page
+const HIGHLIGHT_COLOR = 'rgba(255, 255, 0, 0.4)'; // yellow semi-transparent
+
 // script.js – must be loaded as type="module"
 
 import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.min.mjs';
@@ -41,6 +44,16 @@ async function renderPage(num) {
 
         await page.render(renderContext).promise;
 
+        // Draw search highlights on top
+if (searchHighlights.length > 0) {
+    ctx.save();
+    ctx.fillStyle = HIGHLIGHT_COLOR;
+    searchHighlights.forEach(h => {
+        ctx.fillRect(h.x, h.y, h.width, h.height);
+    });
+    ctx.restore();
+}
+
         pageNumDisplay.textContent = num;
     } catch (err) {
         console.error('Render error:', err);
@@ -62,6 +75,8 @@ document.getElementById('pdf-upload').addEventListener('change', async (event) =
         pdfDoc = await loadingTask.promise;
 
         pageCount = pdfDoc.numPages;
+        await generateThumbnails();
+        await renderPage(pageNum);
         pageCountDisplay.textContent = pageCount;
         pageNum = 1;
 
@@ -100,7 +115,7 @@ document.getElementById('zoom-out').addEventListener('click', async () => {
     await renderPage(pageNum);
 });
 
-// Simple text search (checks current page text)
+// Simple text search + visual highlight
 document.getElementById('search-btn').addEventListener('click', async () => {
     if (!pdfDoc) return;
 
@@ -110,18 +125,50 @@ document.getElementById('search-btn').addEventListener('click', async () => {
         return;
     }
 
+    // Clear previous highlights
+    searchHighlights = [];
+
     try {
         const page = await pdfDoc.getPage(pageNum);
         const textContent = await page.getTextContent();
-        let pageText = '';
+
+        // Get viewport to convert PDF coords → canvas coords
+        const viewport = page.getViewport({ scale });
+
+        // Loop through text items and find matches
         textContent.items.forEach(item => {
-            pageText += item.str.toLowerCase() + ' ';
+            const str = item.str.toLowerCase();
+            if (str.includes(searchText)) {
+                // item.transform = [scaleX, skewY, skewX, scaleY, x, y] in PDF units (bottom-left origin)
+                // Convert to canvas coords (top-left origin)
+                const tx = item.transform[4];
+                const ty = item.transform[5];
+                const width = item.width;
+                const height = item.height;
+
+                // Transform PDF point to viewport coords
+                const pdfPoint = viewport.convertToViewportPoint(tx, ty);
+                const pdfSize = viewport.convertToViewportPoint(tx + width, ty + height);
+
+                const highlight = {
+                    x: pdfPoint[0],
+                    y: pdfPoint[1] - height, // flip y (PDF bottom-up → canvas top-down)
+                    width: pdfSize[0] - pdfPoint[0],
+                    height: height
+                };
+
+                searchHighlights.push(highlight);
+            }
         });
 
-        if (pageText.includes(searchText)) {
-            alert(`Found "${searchText}" on this page!`);
-        } else {
+        // Re-render page to show highlights
+        await renderPage(pageNum);
+
+        if (searchHighlights.length === 0) {
             alert(`"${searchText}" not found on this page.`);
+        } else {
+            console.log(`Found ${searchHighlights.length} matches`);
+            // Optional: alert(`Found ${searchHighlights.length} match(es)!`);
         }
     } catch (err) {
         alert('Search error: ' + err.message);
@@ -134,6 +181,54 @@ document.getElementById('save-notes').addEventListener('click', () => {
     localStorage.setItem('pdfReaderNotes', notes);
     alert('Notes saved!');
 });
+
+// Clear highlights
+document.getElementById('clear-highlights').addEventListener('click', async () => {
+    searchHighlights = [];
+    await renderPage(pageNum);
+});
+
+// Adding thumbnails
+let thumbnails = [];
+const thumbnailsContainer = document.getElementById('thumbnails');
+
+async function generateThumbnails() {
+    thumbnailsContainer.innerHTML = ''; // clear
+    thumbnails = [];
+
+    const thumbScale = 0.3; // small size
+
+    for (let i = 1; i <= pageCount; i++) {
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: thumbScale });
+
+        const thumbCanvas = document.createElement('canvas');
+        thumbCanvas.width = viewport.width;
+        thumbCanvas.height = viewport.height;
+        const thumbCtx = thumbCanvas.getContext('2d');
+
+        await page.render({
+            canvasContext: thumbCtx,
+            viewport: viewport
+        }).promise;
+
+        thumbCanvas.className = 'thumbnail';
+        thumbCanvas.dataset.page = i;
+        if (i === pageNum) thumbCanvas.classList.add('active');
+
+        thumbCanvas.addEventListener('click', async () => {
+            pageNum = parseInt(thumbCanvas.dataset.page);
+            await renderPage(pageNum);
+
+            // Update active class
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            thumbCanvas.classList.add('active');
+        });
+
+        thumbnailsContainer.appendChild(thumbCanvas);
+        thumbnails.push(thumbCanvas);
+    }
+}
 
 // Load saved notes on start
 document.getElementById('notes').value = localStorage.getItem('pdfReaderNotes') || '';
