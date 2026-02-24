@@ -55,6 +55,7 @@ if (searchHighlights.length > 0) {
 }
 
         pageNumDisplay.textContent = num;
+        pdfContainer.scrollTop = 0;   // scroll container to top after render/zoom
     } catch (err) {
         console.error('Render error:', err);
         alert('Error rendering page: ' + err.message);
